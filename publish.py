@@ -74,7 +74,7 @@ def render_sources(sources: list[dict]) -> str:
         label = s.get("label", "")
         url = s.get("url", "")
         items.append(
-            f'            <li><strong>{label}:</strong> '
+            f'<li>{label}: '
             f'<a href="{url}" target="_blank" rel="noopener">{url}</a></li>'
         )
     return "\n".join(items)
@@ -135,7 +135,7 @@ def main() -> None:
 
     # Archive page
     date_links = "\n".join(
-        f'        <li><a href="/{e["date"]}/">{e["date"]}</a></li>'
+        f'<li><a href="{e["date"]}/">{e["date"]}</a></li>'
         for e in entries
     )
     archive_html = archive_template.substitute(date_links=date_links)

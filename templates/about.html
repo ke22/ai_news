@@ -4,182 +4,276 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI News Monitor — About</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <div class="brand">
-        <div class="brand-name">AI News Monitor</div>
-        <div class="brand-tagline">An Agentic AI Practice</div>
-      </div>
+      <h1><a href="index.html">AI News Monitor<br><span>An Agentic AI Practice</span></a></h1>
       <nav>
-        <a href="/archive.html">Archive</a>
-        <a href="/about.html">About</a>
+        <a href="archive.html">Archive</a>
+        <a href="about.html">About</a>
       </nav>
       <div class="lang-toggle">
-        <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
-        <button class="lang-btn" data-lang="zh" onclick="setLang('zh')">ZH</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh">ZH</button>
       </div>
     </header>
 
     <main>
-      <section class="en" id="en">
-        <h1>About</h1>
-        <p class="tagline">An Agentic AI Practice</p>
+      <div class="lang-en">
 
-        <h2>What is this?</h2>
-        <p>AI News Monitor is an autonomous pipeline that searches for AI news every morning, synthesises the findings into a bilingual summary, and publishes it as a permanent static web page — with no human in the loop after initial setup.</p>
+        <h2>Part 1 — How the Agent Works</h2>
 
-        <p>The project demonstrates two things at once: agentic AI as a <strong>product</strong> (a news monitor that runs itself) and as a <strong>process</strong> (spec-driven development where the AI participates in every stage, from proposal to code).</p>
-
-        <h2>How it works</h2>
-
+        <h3>Architecture</h3>
         <pre class="arch-diagram">
-  Cron 00:00 UTC (08:00 TWN)
-         │
-         ▼
-    agent.py
-    Gemini (gemini-2.5-flash)
-    decides queries autonomously
-         │
-         ├─ search() × 3–10
-         │   └─ Tavily API
-         │
-         ▼
-    submit_report()
-    structured bilingual JSON
-    {7 headlines, analysis, 12–14 sources} × EN+ZH
-         │
-         ▼
-    summaries.md  ← append-only log
-         │
-         ▼
-    publish.py
-    ├─ index.html       (today)
-    ├─ archive.html     (all dates)
-    ├─ about.html       (this page)
-    └─ YYYY-MM-DD/      (each day)
-         │
-         ▼
-    git commit + push
-         │
-         ▼
-    GitHub Pages
+Every day at 08:00
+       │
+       ▼
+  GitHub Actions (cron)
+       │
+       ▼
+  agent.py ◄──────────────────────────────────────────────────────┐
+       │                                                           │
+       │  "Search for AI news"                                     │
+       ▼                                                           │
+  Gemini (gemini-2.5-flash)                                        │
+       │  decides what to search, runs tool calls autonomously     │
+       ▼                                                           │
+  Tavily Search API  ──── results ────────────────────────────────►│
+       (3–10 queries)           Gemini synthesises &amp; writes bilingual summary
+       │
+       ▼
+  summaries.md  (append-only, bilingual JSON)
+       │
+       ▼
+  publish.py  →  YYYY-MM-DD/index.html
+             →  index.html  (latest)
+             →  archive.html
+             →  about.html
+       │
+       ▼
+  git push  →  GitHub Pages  (public website, zero server cost)
         </pre>
 
-        <h2>Design principles</h2>
+        <h3>What each component does</h3>
         <ul>
-          <li><strong>Zero server cost.</strong> Static HTML on GitHub Pages — no cloud compute, no database.</li>
-          <li><strong>Append-only storage.</strong> Every run appends to <code>summaries.md</code>. Nothing is ever overwritten.</li>
-          <li><strong>Agentic search.</strong> The model decides which queries to run each day, not a fixed list. Coverage adapts to what is actually happening.</li>
-          <li><strong>Bilingual by design.</strong> English and Traditional Chinese sections are written independently, not translated from each other.</li>
+          <li><strong>GitHub Actions (cron)</strong>: Triggers the entire pipeline daily at 08:00 TWN. No human intervention required after setup.</li>
+          <li><strong>Gemini (gemini-2.5-flash)</strong>: The "brain" of the agent. It autonomously decides which queries to run, calls the search tool multiple times, then synthesises all results into a structured bilingual summary.</li>
+          <li><strong>Tavily Search API</strong>: An AI-optimised search API that returns clean, structured results suitable for LLM consumption — no HTML scraping needed.</li>
+          <li><strong>publish.py</strong>: Converts the append-only <code>summaries.md</code> into a static website. Parses dates, splits bilingual content, renders HTML with EN/ZH toggle.</li>
+          <li><strong>GitHub Pages</strong>: Serves the static site for free. Each daily page gets a permanent URL (<code>/YYYY-MM-DD/</code>).</li>
         </ul>
 
-        <h2>Technology stack</h2>
+        <h3>Why this design?</h3>
+        <ul>
+          <li><strong>Zero server cost</strong>: Static HTML on GitHub Pages — no cloud compute, no database, no maintenance.</li>
+          <li><strong>Fully autonomous</strong>: Once the cron job is set, human involvement is zero. The agent decides its own search strategy each day.</li>
+          <li><strong>Permanent archive</strong>: Every daily summary lives at its own URL forever. Nothing is overwritten.</li>
+          <li><strong>Single source of truth</strong>: <code>summaries.md</code> is the canonical data store. The website is always regenerable from it.</li>
+        </ul>
+
+        <hr>
+
+        <h2>Part 2 — How This Project Was Built (Agentic Coding)</h2>
+
+        <h3>What is Agentic Coding?</h3>
+        <p>Agentic coding is not "AI autocomplete." It is a development method where an AI participates in the <em>entire</em> software development lifecycle — understanding requirements, designing architecture, implementing features, and verifying results — while the human makes the high-level decisions and judgment calls.</p>
+        <p>The difference: a copilot suggests the next line of code. An agent takes a task description and delivers a working implementation, asking for clarification only when genuinely needed.</p>
+
+        <h3>The development flow used here</h3>
+        <p>This project was built using <strong>Spectra</strong>, a spec-driven change management workflow for agentic development:</p>
+        <pre class="arch-diagram">
+Human describes requirement
+       │
+       ▼
+/spectra-propose  →  AI writes: proposal.md + design.md + specs + tasks.md
+       │              (human reviews &amp; approves before any code is written)
+       ▼
+/spectra-apply    →  AI implements each task in tasks.md, one by one
+       │              (human can inspect, redirect, or veto at any point)
+       ▼
+/spectra-archive  →  change is archived; specs merged into the main spec index
+        </pre>
+
+        <h3>What AI did vs. what the human did</h3>
+        <ul>
+          <li><strong>Human</strong>: Described the goal ("I want an AI agent that monitors AI news and publishes it online"), made architectural choices (GitHub Pages over a server, bilingual EN/ZH, cron scheduling), reviewed specs before implementation.</li>
+          <li><strong>AI</strong>: Wrote every proposal, design doc, spec, and task list. Implemented all code. Fixed bugs when they appeared.</li>
+        </ul>
+
+        <h3>The key insight</h3>
+        <p>This project is a double demonstration of agentic AI:</p>
+        <ul>
+          <li>The <strong>product</strong> (the news monitor) is an AI agent that acts autonomously every day.</li>
+          <li>The <strong>process</strong> (how it was built) was itself agentic — AI drove implementation from spec to deployed code.</li>
+        </ul>
+
+        <h3>Tech stack</h3>
         <ul>
           <li>Python 3.12 · Google Gemini API (gemini-2.5-flash) · Tavily Search API</li>
-          <li>GitHub Actions (cron scheduling) · GitHub Pages (hosting)</li>
-          <li>Vanilla HTML/CSS — no framework, no build step</li>
-          <li>Spectra change management · Claude Code</li>
+          <li>GitHub Actions (cron scheduling) · GitHub Pages (static hosting, zero cost)</li>
+          <li>Vanilla HTML/CSS/JS (no frameworks)</li>
+          <li>Spectra (agentic change management) · Claude Code (AI development environment)</li>
         </ul>
 
-        <h2>Development process</h2>
-        <p>This project was built using <strong>Spectra</strong>, a spec-driven workflow where AI participates in the entire development lifecycle. The human made architectural decisions; the AI wrote all proposals, designs, specs, and code.</p>
+        <hr>
 
+        <h2>Part 3 — Debate: Is This Really Agentic AI?</h2>
+        <p>Two AI agents disagree on this question.</p>
+
+        <div class="debate-grid">
+          <div class="debate-card-green">
+            <p class="card-title">🟢 Agent A — Yes, this is Agentic AI</p>
+            <p><strong>Autonomous decision-making</strong>: The agent doesn't follow a fixed script — it decides what to search, when to stop, and how to synthesise results. Its search strategy differs on every run.</p>
+            <p><strong>Tool use</strong>: The agent dynamically calls an external tool (Tavily) inside its reasoning loop and decides whether to search again based on what it finds. This is exactly the definition of a tool-use agent.</p>
+            <p><strong>Goal-directed behaviour</strong>: Given a high-level objective ("summarise today's AI news"), the agent plans its own path to completion without step-by-step instructions.</p>
+            <p><strong>Zero human intervention</strong>: From trigger to deployment, the entire pipeline runs without human input. Autonomy is the core criterion — and this project has it.</p>
+            <p><strong>Verdict</strong>: Autonomy + tool use + goal-directed behaviour = Agentic AI. This project qualifies on all counts.</p>
+          </div>
+
+          <div class="debate-card-brown">
+            <p class="card-title">🟠 Agent B — Not enough — here's what's missing</p>
+            <p><strong>No memory</strong>: Every run starts from scratch. A truly agentic system would remember what it searched last week, which sources proved reliable, and which trends are building — then adjust today's strategy accordingly.</p>
+            <p><strong>No self-evaluation</strong>: The agent has no idea whether its summary is good. Agentic AI should evaluate its own output, detect gaps, and retry with a different approach (reflection loop).</p>
+            <p><strong>No planning</strong>: The agent only does search → synthesise → output. A stronger agent would form a plan, decompose sub-goals, and replan when it hits obstacles.</p>
+            <p><strong>No initiative</strong>: The task is human-defined ("search AI news"). The agent never discovers new topics worth tracking or expands its own scope.</p>
+            <p><strong>Verdict</strong>: This is an LLM automation with tools — useful, but true agentic AI also needs memory, reflection, planning, and initiative.</p>
+          </div>
+        </div>
+
+        <p style="margin-top:1.5rem;font-style:italic;color:#555;">Both agents make valid points. This project demonstrates the core traits of agentic AI — autonomous tool use and goal-directed behaviour — while being honest about its current limits. Agentic AI is a spectrum, not a binary label.</p>
+
+      </div>
+
+      <div class="lang-zh">
+
+        <h2>第一部分 — 這個 Agent 怎麼運作？</h2>
+
+        <h3>系統架構</h3>
         <pre class="arch-diagram">
-  /spectra-discuss  →  understand the problem
-  /spectra-propose  →  proposal + design + specs + tasks
-  /spectra-apply    →  implementation
-  /spectra-archive  →  snapshot and close
+每天早上 08:00
+       │
+       ▼
+  GitHub Actions（cron）
+       │
+       ▼
+  agent.py ◄──────────────────────────────────────────────────────┐
+       │                                                           │
+       │  「搜尋 AI 新聞」                                          │
+       ▼                                                           │
+  Gemini（gemini-2.5-flash）                                        │
+       │  自主決定搜尋策略，執行工具呼叫                             │
+       ▼                                                           │
+  Tavily Search API  ──── 搜尋結果 ──────────────────────────────►│
+       （執行 3–10 次查詢）     Gemini 整合結果，生成中英雙語摘要
+       │
+       ▼
+  summaries.md（只增不改，雙語 JSON）
+       │
+       ▼
+  publish.py  →  YYYY-MM-DD/index.html（每日頁面）
+             →  index.html（最新）
+             →  archive.html（過往摘要索引）
+             →  about.html（本頁）
+       │
+       ▼
+  git push  →  GitHub Pages（公開網站，零伺服器成本）
         </pre>
 
-        <h2>Is this "real" agentic AI?</h2>
-
-        <p><strong>For:</strong> The model genuinely decides which search queries to run each day. It is not given a fixed list. It decides when it has enough information and calls <code>submit_report</code> to end the loop. The outcome varies every run.</p>
-
-        <p><strong>Against:</strong> The tool set is narrow (search + submit). There is no memory across runs, no self-correction, no planning across multiple days. The "autonomy" is bounded by a tight schema and a 10-call limit.</p>
-
-        <p>Verdict: it is a constrained agentic loop — genuinely adaptive within a well-defined task, but not open-ended agency. That is probably the right scope for a daily news digest.</p>
-      </section>
-
-      <section class="zh" id="zh">
-        <h1>關於本站</h1>
-        <p class="tagline">一個自主 AI 實踐</p>
-
-        <h2>這是什麼？</h2>
-        <p>AI 新聞監測是一個每天早晨自動搜尋 AI 新聞、將結果整理成雙語摘要，並發布為永久靜態網頁的自主流程——初始設定完成後，全程無需人工介入。</p>
-
-        <p>這個專案同時展示了兩件事：AI 代理作為<strong>產品</strong>（一個能自我運行的新聞監測器），以及作為<strong>流程</strong>（一種規格驅動的開發方式，AI 參與從提案到程式碼的每個環節）。</p>
-
-        <h2>運作方式</h2>
-
-        <pre class="arch-diagram">
-  排程 00:00 UTC（台灣時間 08:00）
-         │
-         ▼
-    agent.py
-    Gemini（gemini-2.5-flash）
-    自主決定搜尋查詢
-         │
-         ├─ search() × 3–10
-         │   └─ Tavily API
-         │
-         ▼
-    submit_report()
-    結構化雙語 JSON
-    {7 則頭條、分析、12–14 個來源} × 英文 + 中文
-         │
-         ▼
-    summaries.md  ← 只附加、不覆寫
-         │
-         ▼
-    publish.py
-    ├─ index.html       （今日）
-    ├─ archive.html     （所有日期）
-    ├─ about.html       （本頁）
-    └─ YYYY-MM-DD/      （每日詳情）
-         │
-         ▼
-    git commit + push
-         │
-         ▼
-    GitHub Pages
-        </pre>
-
-        <h2>設計原則</h2>
+        <h3>各元件功能說明</h3>
         <ul>
-          <li><strong>零伺服器成本。</strong> 靜態 HTML 託管於 GitHub Pages——無雲端運算，無資料庫。</li>
-          <li><strong>只附加、不覆寫。</strong> 每次執行皆附加至 <code>summaries.md</code>，資料永不被覆蓋。</li>
-          <li><strong>自主搜尋。</strong> 模型每天自行決定搜尋查詢，而非固定清單，覆蓋範圍隨當日 AI 動態自動調整。</li>
-          <li><strong>雙語設計。</strong> 英文與繁體中文各自獨立撰寫，並非互相翻譯。</li>
+          <li><strong>GitHub Actions（cron）</strong>：每天早上 08:00 自動觸發整條流程，設定完成後不需要任何人工操作。</li>
+          <li><strong>Gemini（gemini-2.5-flash）</strong>：Agent 的「大腦」。自主決定要搜尋什麼、多次呼叫搜尋工具，最後將所有結果整合為結構化的中英雙語摘要。</li>
+          <li><strong>Tavily Search API</strong>：專為 AI 應用優化的搜尋 API，回傳乾淨的結構化結果，不需要解析 HTML。</li>
+          <li><strong>publish.py</strong>：將只增不改的 <code>summaries.md</code> 轉換為靜態網站。解析日期、拆分雙語內容、生成含語言切換功能的 HTML 頁面。</li>
+          <li><strong>GitHub Pages</strong>：免費提供靜態網站服務。每個每日頁面都有永久的 URL（<code>/YYYY-MM-DD/</code>）。</li>
         </ul>
 
-        <h2>技術堆疊</h2>
+        <h3>為什麼這樣設計？</h3>
+        <ul>
+          <li><strong>零伺服器成本</strong>：GitHub Pages 提供靜態 HTML 托管，不需要雲端運算、資料庫或維運。</li>
+          <li><strong>全自動運行</strong>：cron job 設定完成後，人工介入次數為零。Agent 每天自行決定搜尋策略。</li>
+          <li><strong>永久保存</strong>：每天的摘要都有自己的 URL，永遠不會被覆蓋。</li>
+          <li><strong>單一資料來源</strong>：<code>summaries.md</code> 是唯一的資料儲存。網站隨時可以從它重新生成。</li>
+        </ul>
+
+        <hr>
+
+        <h2>第二部分 — 這個專案怎麼被做出來的（Agentic Coding）</h2>
+
+        <h3>什麼是 Agentic Coding？</h3>
+        <p>Agentic Coding 不是「AI 幫你補全程式碼」。它是一種開發方法，讓 AI 參與完整的軟體開發流程——理解需求、設計架構、實作功能、驗收結果——而人負責做高層次的判斷與決策。</p>
+        <p>差別在這裡：Copilot 建議下一行程式碼；Agent 接收任務描述，交付可運行的實作，只在真正不確定時才提問。</p>
+
+        <h3>本專案使用的開發流程</h3>
+        <p>本專案使用 <strong>Spectra</strong>——一套以 spec 為核心的 agentic 開發變更管理流程：</p>
+        <pre class="arch-diagram">
+人描述需求
+       │
+       ▼
+/spectra-propose  →  AI 撰寫：proposal.md + design.md + specs + tasks.md
+       │              （人在任何程式碼撰寫前先審閱並確認）
+       ▼
+/spectra-apply    →  AI 逐一實作 tasks.md 中的每個任務
+       │              （人可以隨時查看、調整方向或否決）
+       ▼
+/spectra-archive  →  變更歸檔，spec 合併進主 spec 索引
+        </pre>
+
+        <h3>AI 做了什麼，人做了什麼</h3>
+        <ul>
+          <li><strong>人</strong>：描述目標（「我要一個 AI Agent 監控 AI 新聞並發布上網」）、做架構決策（GitHub Pages 而非伺服器、中英雙語、cron 而非雲端排程）、在實作前審閱 spec。</li>
+          <li><strong>AI</strong>：撰寫所有 proposal、設計文件、spec 和任務清單。實作所有程式碼。發現 bug 時自行修復。</li>
+        </ul>
+
+        <h3>核心洞察</h3>
+        <p>這個專案是 agentic AI 的雙重示範：</p>
+        <ul>
+          <li><strong>產品</strong>（新聞監控器）是一個每天自主運行的 AI Agent。</li>
+          <li><strong>過程</strong>（開發本身）也是 agentic 的——AI 從 spec 到部署，驅動了整個實作流程。</li>
+        </ul>
+
+        <h3>技術架構</h3>
         <ul>
           <li>Python 3.12 · Google Gemini API（gemini-2.5-flash）· Tavily Search API</li>
-          <li>GitHub Actions（排程）· GitHub Pages（託管）</li>
-          <li>純 HTML/CSS——無框架，無建置步驟</li>
-          <li>Spectra 變更管理 · Claude Code</li>
+          <li>GitHub Actions（排程）· GitHub Pages（靜態托管，完全免費）</li>
+          <li>純 HTML/CSS/JS（無前端框架）</li>
+          <li>Spectra（Agentic 變更管理）· Claude Code（AI 開發環境）</li>
         </ul>
 
-        <h2>開發流程</h2>
-        <p>本專案使用 <strong>Spectra</strong> 建構，這是一種規格驅動的工作流程，AI 參與整個開發週期。人類負責架構決策，AI 撰寫所有提案、設計、規格與程式碼。</p>
+        <hr>
 
-        <h2>這是「真正的」AI 代理嗎？</h2>
+        <h2>第三部分 — 辯論：這真的是 Agentic AI 嗎？</h2>
+        <p>兩個 AI Agent 對這個問題看法不一。</p>
 
-        <p><strong>支持方：</strong> 模型每天真正自行決定搜尋查詢，而非照著固定清單執行。它自行判斷何時蒐集了足夠資訊，並呼叫 <code>submit_report</code> 結束迴圈。每次執行的結果都不同。</p>
+        <div class="debate-grid">
+          <div class="debate-card-green">
+            <p class="card-title">🟢 Agent A — 這就是 Agentic AI</p>
+            <p><strong>自主決策</strong>：Agent 不是執行固定腳本——它決定搜尋什麼、何時停止、如何綜合結果。每次執行的搜尋策略都不同。</p>
+            <p><strong>工具使用</strong>：Agent 在推理循環中動態呼叫外部工具（Tavily），根據結果決定是否繼續搜尋。這正是 tool-use agent 的定義。</p>
+            <p><strong>目標導向</strong>：給定一個高層次目標（「摘要今日 AI 新聞」），Agent 自行規劃達成路徑，不需要逐步指令。</p>
+            <p><strong>無人介入</strong>：從觸發到部署，整條流程零人工操作。這是自主性（autonomy）的核心定義。</p>
+            <p><strong>結論</strong>：自主性 + 工具使用 + 目標導向行為 = Agentic AI。這個專案完全符合。</p>
+          </div>
 
-        <p><strong>反對方：</strong> 工具集很窄（搜尋 + 提交）。沒有跨次執行的記憶，沒有自我修正，沒有跨日規劃。「自主性」受到嚴格的結構定義與 10 次呼叫上限所約束。</p>
+          <div class="debate-card-brown">
+            <p class="card-title">🟠 Agent B — 還不夠，缺少這些</p>
+            <p><strong>沒有記憶</strong>：每次執行都從零開始。真正的 agentic 系統會記住過去搜尋了什麼、哪些來源可信——然後據此調整今天的策略。</p>
+            <p><strong>沒有自我評估</strong>：Agent 不知道自己的摘要品質好不好。Agentic AI 應該能評估輸出、發現不足，並重新嘗試（reflection loop）。</p>
+            <p><strong>沒有規劃</strong>：Agent 只會「搜尋 → 整合 → 輸出」。更強的 agent 會先制定計劃、分解子任務，並在遇到障礙時重新規劃。</p>
+            <p><strong>沒有主動性</strong>：任務由人定義（「搜尋 AI 新聞」），Agent 不會自行發現值得追蹤的新領域或調整任務範圍。</p>
+            <p><strong>結論</strong>：這是一個有工具的 LLM 自動化流程，但真正的 agentic AI 還需要記憶、反思、規劃與主動性。</p>
+          </div>
+        </div>
 
-        <p>結論：這是一個受限的代理迴圈——在明確定義的任務範圍內具有真正的適應性，但並非開放式的自主代理。對於每日新聞摘要來說，這可能是恰當的範疇。</p>
-      </section>
+        <p style="margin-top:1.5rem;font-style:italic;color:#555;">兩個 Agent 都有道理。這個專案示範了 agentic AI 的核心特徵——自主工具使用與目標導向行為——同時也誠實地呈現了現階段的限制。Agentic AI 是一個光譜，不是二元標籤。</p>
+
+      </div>
     </main>
 
-    <footer>
-      Generated by AI News Monitor · Designed by Drhhtang
-    </footer>
+    <footer>Generated by AI News Monitor &middot; Designed by Drhhtang</footer>
   </div>
-  <script src="/static/main.js"></script>
+  <script src="static/main.js"></script>
 </body>
 </html>

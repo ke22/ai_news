@@ -1,22 +1,26 @@
 (function () {
-  function setLang(lang) {
-    document.querySelectorAll('.en').forEach(function (el) {
-      el.style.display = lang === 'en' ? '' : 'none';
+  var lang = localStorage.getItem('lang') || 'en';
+
+  function applyLang(l) {
+    document.querySelectorAll('.lang-en').forEach(function (el) {
+      el.style.display = l === 'en' ? '' : 'none';
     });
-    document.querySelectorAll('.zh').forEach(function (el) {
-      el.style.display = lang === 'zh' ? '' : 'none';
+    document.querySelectorAll('.lang-zh').forEach(function (el) {
+      el.style.display = l === 'zh' ? '' : 'none';
     });
     document.querySelectorAll('.lang-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+      btn.classList.toggle('active', btn.dataset.lang === l);
     });
-    try { localStorage.setItem('ainews_lang', lang); } catch (e) {}
   }
 
-  window.setLang = setLang;
-
   document.addEventListener('DOMContentLoaded', function () {
-    var stored;
-    try { stored = localStorage.getItem('ainews_lang'); } catch (e) {}
-    setLang(stored || 'en');
+    applyLang(lang);
+    document.querySelectorAll('.lang-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        lang = btn.dataset.lang;
+        localStorage.setItem('lang', lang);
+        applyLang(lang);
+      });
+    });
   });
 }());
