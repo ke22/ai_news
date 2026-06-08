@@ -51,7 +51,21 @@ def parse_summaries() -> list[dict]:
 
 
 def render_headlines(headlines: list[str]) -> str:
-    return "\n".join(f"          <li>{h}</li>" for h in headlines)
+    items = []
+    for h in headlines:
+        if ": " in h:
+            title, rest = h.split(": ", 1)
+            items.append(f"            <li><strong>{title}:</strong> {rest}</li>")
+        else:
+            items.append(f"            <li>{h}</li>")
+    return "\n".join(items)
+
+
+def render_analysis(text: str) -> str:
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        paragraphs = [text.strip()]
+    return "\n".join(f"          <p>{p}</p>" for p in paragraphs)
 
 
 def render_sources(sources: list[dict]) -> str:
@@ -59,7 +73,10 @@ def render_sources(sources: list[dict]) -> str:
     for s in sources:
         label = s.get("label", "")
         url = s.get("url", "")
-        items.append(f'          <li><a href="{url}" target="_blank" rel="noopener">{label}</a></li>')
+        items.append(
+            f'            <li><strong>{label}:</strong> '
+            f'<a href="{url}" target="_blank" rel="noopener">{url}</a></li>'
+        )
     return "\n".join(items)
 
 
@@ -68,10 +85,10 @@ def render_day_page(entry: dict, template: Template) -> str:
     return template.substitute(
         date=entry["date"],
         headlines_en=render_headlines(data.get("headlines_en", [])),
-        analysis_en=data.get("analysis_en", ""),
+        analysis_en=render_analysis(data.get("analysis_en", "")),
         sources_en=render_sources(data.get("sources_en", [])),
         headlines_zh=render_headlines(data.get("headlines_zh", [])),
-        analysis_zh=data.get("analysis_zh", ""),
+        analysis_zh=render_analysis(data.get("analysis_zh", "")),
         sources_zh=render_sources(data.get("sources_zh", [])),
     )
 

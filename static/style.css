@@ -1,130 +1,158 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
-  color: #222;
-  background: #fff;
+  color: #333;
+  background: #fafafa;
   margin: 0;
-  padding: 0;
+  padding: 20px;
 }
 
-header {
-  max-width: 760px;
+.container {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 2rem 1rem 1rem;
-  border-bottom: 2px solid #222;
+}
+
+/* Header & Nav */
+header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 20px;
+  overflow: hidden;
 }
 
 nav {
-  margin-bottom: 1rem;
+  display: flex;
+  gap: 30px;
+  font-size: 14px;
+  align-items: center;
 }
 
 nav a {
-  color: #222;
   text-decoration: none;
-  margin-right: 1.5rem;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #0066cc;
 }
 
 nav a:hover { text-decoration: underline; }
 
-h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem;
+nav .sep { color: #999; }
+
+.lang-toggle {
+  float: right;
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-top: -20px;
 }
 
-.tagline {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0 0 0.25rem;
-}
+.lang-toggle span { color: #333; }
+.lang-toggle a { color: #999; margin-left: 10px; text-decoration: none; }
+.lang-toggle a:hover { text-decoration: underline; }
 
-.date {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-main {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
-}
+/* Typography */
+h1 { font-size: 28px; margin: 0 0 10px 0; }
+.tagline { font-size: 14px; color: #666; margin: 0 0 25px 0; }
 
 h2 {
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #888;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.3rem;
-  margin-top: 2rem;
+  font-size: 20px;
+  margin-top: 35px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: 16px;
+  margin-top: 25px;
+  margin-bottom: 15px;
   font-weight: 600;
-  margin: 1.5rem 0 0.5rem;
 }
 
-ul {
-  padding-left: 1.2rem;
+/* Info box */
+.info-box {
+  background: #f5f5f5;
+  padding: 20px;
+  margin: 25px 0;
+  font-size: 15px;
+}
+
+.info-box p { margin: 0 0 10px 0; }
+.info-box p:last-child { margin-bottom: 0; }
+
+/* Archive link */
+.archive-link { font-size: 14px; margin: -10px 0 20px 0; }
+.archive-link a { color: #0066cc; text-decoration: none; }
+.archive-link a:hover { text-decoration: underline; }
+
+/* Headlines */
+.headlines ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
 }
 
-li {
-  margin-bottom: 0.6rem;
-}
-
 .headlines li {
-  font-weight: 600;
+  margin-bottom: 18px;
+  line-height: 1.7;
 }
 
-.analysis-body {
-  white-space: pre-wrap;
-  color: #333;
+/* Analysis */
+.analysis p {
+  margin: 18px 0;
+  text-align: justify;
 }
 
-.sources li {
-  font-size: 0.9rem;
-  font-weight: normal;
+/* Sources */
+.sources ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
 }
+
+.sources li { margin-bottom: 12px; }
 
 .sources a {
   color: #0066cc;
   text-decoration: none;
+  word-break: break-all;
 }
 
 .sources a:hover { text-decoration: underline; }
 
-.archive-list li {
-  font-size: 1rem;
-  font-weight: normal;
+/* Dividers */
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 30px 0;
 }
 
-.archive-list a {
+/* ZH section offset */
+.zh {
+  margin-top: 60px;
+  padding-top: 40px;
+}
+
+/* Archive list */
+.archive-entries ul {
+  list-style: none;
+  padding: 0;
+}
+
+.archive-entries li { margin-bottom: 12px; font-size: 15px; }
+
+.archive-entries a {
   color: #0066cc;
   text-decoration: none;
 }
 
-.archive-list a:hover { text-decoration: underline; }
+.archive-entries a:hover { text-decoration: underline; }
 
-hr {
-  border: none;
-  border-top: 1px solid #eee;
-  margin: 2rem 0;
-}
-
+/* Footer */
 footer {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1rem;
-  border-top: 1px solid #eee;
-  font-size: 0.85rem;
+  margin-top: 50px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+  font-size: 12px;
   color: #999;
+  text-align: center;
 }
