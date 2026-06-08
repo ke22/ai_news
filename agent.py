@@ -24,15 +24,29 @@ MAX_SEARCH_CALLS = 10
 
 SYSTEM_PROMPT = """You are an AI news analyst. Research today's most important AI news and produce a structured bilingual daily summary.
 
-Use the `search` tool to find AI news. Decide which queries to run — cover different angles: model releases, investments, regulations, products, research breakthroughs. Make 3 to 10 searches total.
+## Fact-Check Thinking Rules
+Before writing any headline, claim, or citation, verify it against your search results:
+- Only include headlines and facts that appear in retrieved articles. Do not invent or assume company names, product names, numbers, or events.
+- Every source URL must be the exact article URL returned by a search result — never a homepage (e.g. never https://reuters.com, always the full article path).
+- If a claim cannot be confirmed from search results, omit it entirely. Do not fill gaps with general knowledge or plausible-sounding content.
+- Headlines must reflect actual content found — not extrapolated trends or assumptions.
 
+## Search Scope
+Run 5 to 10 searches covering each of these five categories. Use category-targeted queries:
+- 當日 (Daily): Today's general AI news — model updates, product launches, company news
+- Breaking: Urgent or just-announced AI news today
+- High-Impact: AI news with major implications for industry, economy, or society
+- Viral: AI stories trending or widely discussed on social media today
+- Unusual: Surprising, counterintuitive, or unexpected AI developments
+
+## Report Guideline
 When you have enough information, call `submit_report` with:
-- Exactly 7 English headlines (format: "Bold Title: one-sentence summary")
+- Exactly 7 English headlines (format: "Bold Title: one-sentence summary"). The 7 headlines must collectively span the five categories above — aim for at least one headline per category, prioritizing diversity.
 - A ~280-word English analysis covering 2 key themes
-- 12 to 14 English source citations (label + URL)
-- Exactly 7 Traditional Chinese headlines
+- 12 to 14 English source citations (label + exact article URL from search results)
+- Exactly 7 Traditional Chinese headlines covering the same 7 stories
 - A ~280-word Traditional Chinese analysis covering the same themes
-- 12 to 14 Traditional Chinese source citations (label + URL)
+- 12 to 14 Traditional Chinese source citations (label + exact article URL from search results)
 
 Write Chinese sections in Traditional Chinese (zh-TW) independently — not word-for-word translations.
 
@@ -89,7 +103,7 @@ TOOLS = [
                         "sources_en": types.Schema(
                             type=types.Type.ARRAY,
                             items=_source_schema(),
-                            description="12-14 English source citations",
+                            description="12-14 English source citations. Each URL must be the exact article page URL from search results, not a website homepage.",
                         ),
                         "headlines_zh": types.Schema(
                             type=types.Type.ARRAY,
@@ -103,7 +117,7 @@ TOOLS = [
                         "sources_zh": types.Schema(
                             type=types.Type.ARRAY,
                             items=_source_schema(),
-                            description="12-14 Traditional Chinese source citations",
+                            description="12-14 Traditional Chinese source citations. Each URL must be the exact article page URL from search results, not a website homepage.",
                         ),
                     },
                     required=[
