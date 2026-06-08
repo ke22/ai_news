@@ -109,6 +109,7 @@ def main() -> None:
     day_template = load_template("day.html")
     index_template = load_template("index.html")
     archive_template = load_template("archive.html")
+    about_template = load_template("about.html")
 
     # Per-day pages
     for entry in entries:
@@ -123,10 +124,10 @@ def main() -> None:
     index_html = index_template.substitute(
         date=latest["date"],
         headlines_en=render_headlines(data.get("headlines_en", [])),
-        analysis_en=data.get("analysis_en", ""),
+        analysis_en=render_analysis(data.get("analysis_en", "")),
         sources_en=render_sources(data.get("sources_en", [])),
         headlines_zh=render_headlines(data.get("headlines_zh", [])),
-        analysis_zh=data.get("analysis_zh", ""),
+        analysis_zh=render_analysis(data.get("analysis_zh", "")),
         sources_zh=render_sources(data.get("sources_zh", [])),
     )
     write_file(os.path.join(ROOT, "index.html"), index_html)
@@ -140,6 +141,11 @@ def main() -> None:
     archive_html = archive_template.substitute(date_links=date_links)
     write_file(os.path.join(ROOT, "archive.html"), archive_html)
     print("  wrote archive.html", file=sys.stderr)
+
+    # About page (static template, no substitutions needed)
+    about_html = about_template.template
+    write_file(os.path.join(ROOT, "about.html"), about_html)
+    print("  wrote about.html", file=sys.stderr)
 
     print(f"Done. Published {len(entries)} entries.", file=sys.stderr)
 

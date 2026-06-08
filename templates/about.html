@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News Monitor — About</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="lang-toggle">
+        <span>EN</span>
+        <a href="#zh">ZH</a>
+      </div>
+      <nav>
+        <a href="/index.html">AI News Monitor</a>
+        <span class="sep">·</span>
+        <a href="/archive.html">Archive</a>
+        <span class="sep">·</span>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="en" id="en">
+        <h1>About</h1>
+        <p class="tagline">An Agentic AI Practice</p>
+
+        <h2>What is this?</h2>
+        <p>AI News Monitor is an autonomous pipeline that searches for AI news every morning, synthesises the findings into a bilingual summary, and publishes it as a permanent static web page — with no human in the loop after initial setup.</p>
+
+        <p>The project demonstrates two things at once: agentic AI as a <strong>product</strong> (a news monitor that runs itself) and as a <strong>process</strong> (spec-driven development where the AI participates in every stage, from proposal to code).</p>
+
+        <h2>How it works</h2>
+
+        <pre class="arch-diagram">
+  Cron 00:00 UTC (08:00 TWN)
+         │
+         ▼
+    agent.py
+    Claude (gemini-2.0-flash)
+    decides queries autonomously
+         │
+         ├─ search() × 3–10
+         │   └─ Tavily API
+         │
+         ▼
+    submit_report()
+    structured bilingual JSON
+    {7 headlines, analysis, 12–14 sources} × EN+ZH
+         │
+         ▼
+    summaries.md  ← append-only log
+         │
+         ▼
+    publish.py
+    ├─ index.html       (today)
+    ├─ archive.html     (all dates)
+    └─ YYYY-MM-DD/      (each day)
+         │
+         ▼
+    git commit + push
+         │
+         ▼
+    GitHub Pages
+        </pre>
+
+        <h2>Design principles</h2>
+        <ul>
+          <li><strong>Zero server cost.</strong> Static HTML on GitHub Pages — no cloud compute, no database.</li>
+          <li><strong>Append-only storage.</strong> Every run appends to <code>summaries.md</code>. Nothing is ever overwritten.</li>
+          <li><strong>Agentic search.</strong> The model decides which queries to run each day, not a fixed list. Coverage adapts to what is actually happening.</li>
+          <li><strong>Bilingual by design.</strong> English and Traditional Chinese sections are written independently, not translated from each other.</li>
+        </ul>
+
+        <h2>Technology stack</h2>
+        <ul>
+          <li>Python 3.12 · Google Gemini API (gemini-2.0-flash) · Tavily Search API</li>
+          <li>GitHub Actions (cron scheduling) · GitHub Pages (hosting)</li>
+          <li>Vanilla HTML/CSS — no framework, no build step</li>
+          <li>Spectra change management · Claude Code</li>
+        </ul>
+
+        <h2>Development process</h2>
+        <p>This project was built using <strong>Spectra</strong>, a spec-driven workflow where AI participates in the entire development lifecycle. The human made architectural decisions; the AI wrote all proposals, designs, specs, and code.</p>
+
+        <pre class="arch-diagram">
+  /spectra-discuss  →  understand the problem
+  /spectra-propose  →  proposal + design + specs + tasks
+  /spectra-apply    →  implementation
+  /spectra-archive  →  snapshot and close
+        </pre>
+
+        <h2>Is this "real" agentic AI?</h2>
+
+        <p><strong>For:</strong> The model genuinely decides which search queries to run each day. It is not given a fixed list. It decides when it has enough information and calls <code>submit_report</code> to end the loop. The outcome varies every run.</p>
+
+        <p><strong>Against:</strong> The tool set is narrow (search + submit). There is no memory across runs, no self-correction, no planning across multiple days. The "autonomy" is bounded by a tight schema and a 10-call limit.</p>
+
+        <p>Verdict: it is a constrained agentic loop — genuinely adaptive within a well-defined task, but not open-ended agency. That is probably the right scope for a daily news digest.</p>
+      </section>
+
+      <section class="zh" id="zh">
+        <h1>關於本站</h1>
+        <p class="tagline">一個自主 AI 實踐</p>
+
+        <h2>這是什麼？</h2>
+        <p>AI 新聞監測是一個每天早晨自動搜尋 AI 新聞、將結果整理成雙語摘要，並發布為永久靜態網頁的自主流程——初始設定完成後，全程無需人工介入。</p>
+
+        <p>這個專案同時展示了兩件事：AI 代理作為<strong>產品</strong>（一個能自我運行的新聞監測器），以及作為<strong>流程</strong>（一種規格驅動的開發方式，AI 參與從提案到程式碼的每個環節）。</p>
+
+        <h2>運作方式</h2>
+
+        <pre class="arch-diagram">
+  排程 00:00 UTC（台灣時間 08:00）
+         │
+         ▼
+    agent.py
+    Gemini（gemini-2.0-flash）
+    自主決定搜尋查詢
+         │
+         ├─ search() × 3–10
+         │   └─ Tavily API
+         │
+         ▼
+    submit_report()
+    結構化雙語 JSON
+    {7 則頭條、分析、12–14 個來源} × 英文 + 中文
+         │
+         ▼
+    summaries.md  ← 只附加、不覆寫
+         │
+         ▼
+    publish.py
+    ├─ index.html       （今日）
+    ├─ archive.html     （所有日期）
+    └─ YYYY-MM-DD/      （每日詳情）
+         │
+         ▼
+    git commit + push
+         │
+         ▼
+    GitHub Pages
+        </pre>
+
+        <h2>設計原則</h2>
+        <ul>
+          <li><strong>零伺服器成本。</strong> 靜態 HTML 託管於 GitHub Pages——無雲端運算，無資料庫。</li>
+          <li><strong>只附加、不覆寫。</strong> 每次執行皆附加至 <code>summaries.md</code>，資料永不被覆蓋。</li>
+          <li><strong>自主搜尋。</strong> 模型每天自行決定搜尋查詢，而非固定清單，覆蓋範圍隨當日 AI 動態自動調整。</li>
+          <li><strong>雙語設計。</strong> 英文與繁體中文各自獨立撰寫，並非互相翻譯。</li>
+        </ul>
+
+        <h2>技術堆疊</h2>
+        <ul>
+          <li>Python 3.12 · Google Gemini API（gemini-2.0-flash）· Tavily Search API</li>
+          <li>GitHub Actions（排程）· GitHub Pages（託管）</li>
+          <li>純 HTML/CSS——無框架，無建置步驟</li>
+          <li>Spectra 變更管理 · Claude Code</li>
+        </ul>
+
+        <h2>開發流程</h2>
+        <p>本專案使用 <strong>Spectra</strong> 建構，這是一種規格驅動的工作流程，AI 參與整個開發週期。人類負責架構決策，AI 撰寫所有提案、設計、規格與程式碼。</p>
+
+        <h2>這是「真正的」AI 代理嗎？</h2>
+
+        <p><strong>支持方：</strong> 模型每天真正自行決定搜尋查詢，而非照著固定清單執行。它自行判斷何時蒐集了足夠資訊，並呼叫 <code>submit_report</code> 結束迴圈。每次執行的結果都不同。</p>
+
+        <p><strong>反對方：</strong> 工具集很窄（搜尋 + 提交）。沒有跨次執行的記憶，沒有自我修正，沒有跨日規劃。「自主性」受到嚴格的結構定義與 10 次呼叫上限所約束。</p>
+
+        <p>結論：這是一個受限的代理迴圈——在明確定義的任務範圍內具有真正的適應性，但並非開放式的自主代理。對於每日新聞摘要來說，這可能是恰當的範疇。</p>
+      </section>
+    </main>
+
+    <footer>
+      Generated by AI News Monitor
+    </footer>
+  </div>
+</body>
+</html>
