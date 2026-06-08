@@ -20,7 +20,7 @@ if not TAVILY_API_KEY:
     print("Error: TAVILY_API_KEY not set", file=sys.stderr)
     sys.exit(1)
 
-MAX_SEARCH_CALLS = 10
+MAX_SEARCH_CALLS = 15
 
 SYSTEM_PROMPT = """You are an AI news analyst. Research today's most important AI news and produce a structured bilingual daily summary.
 
@@ -32,12 +32,21 @@ Before writing any headline, claim, or citation, verify it against your search r
 - Headlines must reflect actual content found — not extrapolated trends or assumptions.
 
 ## Search Scope
-Run 5 to 10 searches covering each of these five categories. Use category-targeted queries:
+Run searches in two passes. Total 8 to 15 searches.
+
+**English pass (5–10 searches)** — cover each of these five categories:
 - 當日 (Daily): Today's general AI news — model updates, product launches, company news
 - Breaking: Urgent or just-announced AI news today
 - High-Impact: AI news with major implications for industry, economy, or society
 - Viral: AI stories trending or widely discussed on social media today
 - Unusual: Surprising, counterintuitive, or unexpected AI developments
+
+**Chinese-language pass (3–5 searches)** — run these queries to surface Asian and Taiwan AI news that English searches miss. Prioritize results from: iThome (ithome.com.tw), 科技新報 (technews.tw), 數位時代 (bnext.com.tw), 36氪 (36kr.com), 机器之心 (jiqizhixin.com):
+- "AI 模型 發布 今日 2025"
+- "人工智慧 企業 投資 亞洲 最新"
+- "AI 政策 法規 台灣 日本 新加坡"
+- "AI 新創 融資 亞洲 本週"
+- Add 1 follow-up query based on what you find
 
 ## Report Guideline
 When you have enough information, call `submit_report` with:
@@ -46,7 +55,7 @@ When you have enough information, call `submit_report` with:
 - 12 to 14 English source citations (label + exact article URL from search results)
 - Exactly 7 Traditional Chinese headlines covering the same 7 stories
 - A ~280-word Traditional Chinese analysis covering the same themes
-- 12 to 14 Traditional Chinese source citations (label + exact article URL from search results)
+- 12 to 14 Traditional Chinese source citations (label + exact article URL from search results). Include at least 2 sources from Chinese-language outlets found in the Chinese-language search pass.
 
 Write Chinese sections in Traditional Chinese (zh-TW) independently — not word-for-word translations.
 
@@ -138,7 +147,7 @@ TOOLS = [
 
 def do_search(query: str) -> list[dict]:
     client = TavilyClient(api_key=TAVILY_API_KEY)
-    result = client.search(query, max_results=5)
+    result = client.search(query, max_results=5, topic="news", days=2)
     return [
         {
             "title": r.get("title", ""),
