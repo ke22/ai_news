@@ -3,17 +3,18 @@ import os
 import sys
 from datetime import date
 
-import anthropic
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from tavily import TavilyClient
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
 
-if not ANTHROPIC_API_KEY:
-    print("Error: ANTHROPIC_API_KEY not set", file=sys.stderr)
+if not GEMINI_API_KEY:
+    print("Error: GEMINI_API_KEY not set", file=sys.stderr)
     sys.exit(1)
 if not TAVILY_API_KEY:
     print("Error: TAVILY_API_KEY not set", file=sys.stderr)
@@ -21,110 +22,107 @@ if not TAVILY_API_KEY:
 
 MAX_SEARCH_CALLS = 10
 
-SYSTEM_PROMPT = """You are an AI news analyst. Your job is to research today's most important AI news and produce a structured bilingual (English and Chinese) daily summary.
+SYSTEM_PROMPT = """You are an AI news analyst. Research today's most important AI news and produce a structured bilingual daily summary.
 
-Use the `search` tool to find AI news. You decide which queries to run — be strategic and cover different angles: model releases, investments, regulations, products, research. Make 3 to 10 searches total.
+Use the `search` tool to find AI news. Decide which queries to run — cover different angles: model releases, investments, regulations, products, research breakthroughs. Make 3 to 10 searches total.
 
-When you have gathered enough information, call `submit_report` with:
-- 7 headlines in English (bold title concept + one-sentence summary)
-- A ~280-word analysis in English covering 2 key themes
-- 12-14 source citations with labels and URLs
-- The same three sections in Traditional Chinese (zh-TW)
+When you have enough information, call `submit_report` with:
+- Exactly 7 English headlines (format: "Bold Title: one-sentence summary")
+- A ~280-word English analysis covering 2 key themes
+- 12 to 14 English source citations (label + URL)
+- Exactly 7 Traditional Chinese headlines
+- A ~280-word Traditional Chinese analysis covering the same themes
+- 12 to 14 Traditional Chinese source citations (label + URL)
 
-The Chinese sections should be independently written in Chinese — not translated word-for-word.
+Write Chinese sections in Traditional Chinese (zh-TW) independently — not word-for-word translations.
 
 Today's date: {date}"""
 
-SEARCH_TOOL = {
-    "name": "search",
-    "description": "Search for AI news using the Tavily search API. Returns a list of relevant articles.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "The search query to find AI news articles",
-            }
+
+def _source_schema() -> types.Schema:
+    return types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "label": types.Schema(type=types.Type.STRING),
+            "url": types.Schema(type=types.Type.STRING),
         },
-        "required": ["query"],
-    },
-}
+        required=["label", "url"],
+    )
 
-SUBMIT_REPORT_TOOL = {
-    "name": "submit_report",
-    "description": "Submit the final structured bilingual daily AI news report. Call this once when you have gathered enough information.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "date": {
-                "type": "string",
-                "description": "Report date in YYYY-MM-DD format",
-            },
-            "headlines_en": {
-                "type": "array",
-                "items": {"type": "string"},
-                "minItems": 7,
-                "maxItems": 7,
-                "description": "Exactly 7 English headlines, each as 'Bold Title: one-sentence summary'",
-            },
-            "analysis_en": {
-                "type": "string",
-                "description": "~280-word English analysis covering 2 key themes from today's news",
-            },
-            "sources_en": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "label": {"type": "string"},
-                        "url": {"type": "string"},
+
+TOOLS = [
+    types.Tool(
+        function_declarations=[
+            types.FunctionDeclaration(
+                name="search",
+                description="Search for AI news using Tavily. Returns articles with title, URL, and content.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "query": types.Schema(
+                            type=types.Type.STRING,
+                            description="Search query for finding AI news",
+                        )
                     },
-                    "required": ["label", "url"],
-                },
-                "minItems": 12,
-                "maxItems": 14,
-                "description": "12-14 source citations with publication name and URL",
-            },
-            "headlines_zh": {
-                "type": "array",
-                "items": {"type": "string"},
-                "minItems": 7,
-                "maxItems": 7,
-                "description": "Exactly 7 Traditional Chinese headlines",
-            },
-            "analysis_zh": {
-                "type": "string",
-                "description": "~280-word Traditional Chinese analysis covering 2 key themes",
-            },
-            "sources_zh": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "label": {"type": "string"},
-                        "url": {"type": "string"},
+                    required=["query"],
+                ),
+            ),
+            types.FunctionDeclaration(
+                name="submit_report",
+                description="Submit the final structured bilingual AI news report. Call once when done searching.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "date": types.Schema(
+                            type=types.Type.STRING,
+                            description="Report date in YYYY-MM-DD format",
+                        ),
+                        "headlines_en": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING),
+                            description="Exactly 7 English headlines",
+                        ),
+                        "analysis_en": types.Schema(
+                            type=types.Type.STRING,
+                            description="~280-word English analysis covering 2 key themes",
+                        ),
+                        "sources_en": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=_source_schema(),
+                            description="12-14 English source citations",
+                        ),
+                        "headlines_zh": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING),
+                            description="Exactly 7 Traditional Chinese headlines",
+                        ),
+                        "analysis_zh": types.Schema(
+                            type=types.Type.STRING,
+                            description="~280-word Traditional Chinese analysis",
+                        ),
+                        "sources_zh": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=_source_schema(),
+                            description="12-14 Traditional Chinese source citations",
+                        ),
                     },
-                    "required": ["label", "url"],
-                },
-                "minItems": 12,
-                "maxItems": 14,
-                "description": "12-14 source citations in Chinese labels with URLs",
-            },
-        },
-        "required": [
-            "date",
-            "headlines_en",
-            "analysis_en",
-            "sources_en",
-            "headlines_zh",
-            "analysis_zh",
-            "sources_zh",
-        ],
-    },
-}
+                    required=[
+                        "date",
+                        "headlines_en",
+                        "analysis_en",
+                        "sources_en",
+                        "headlines_zh",
+                        "analysis_zh",
+                        "sources_zh",
+                    ],
+                ),
+            ),
+        ]
+    )
+]
 
 
-def search(query: str) -> list[dict]:
+def do_search(query: str) -> list[dict]:
     client = TavilyClient(api_key=TAVILY_API_KEY)
     result = client.search(query, max_results=5)
     return [
@@ -138,67 +136,81 @@ def search(query: str) -> list[dict]:
 
 
 def run_agent() -> dict:
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
     today = date.today().isoformat()
 
-    messages = []
+    config = types.GenerateContentConfig(
+        tools=TOOLS,
+        system_instruction=SYSTEM_PROMPT.format(date=today),
+    )
+
+    contents: list[types.Content] = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    text=f"Research today's ({today}) most important AI news and submit the bilingual report."
+                )
+            ],
+        )
+    ]
+
     search_call_count = 0
     report = None
 
     while True:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8192,
-            system=SYSTEM_PROMPT.format(date=today),
-            tools=[SEARCH_TOOL, SUBMIT_REPORT_TOOL],
-            messages=messages,
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=contents,
+            config=config,
         )
 
-        assistant_content = response.content
-        messages.append({"role": "assistant", "content": assistant_content})
+        assistant_content = response.candidates[0].content
+        contents.append(assistant_content)
 
-        if response.stop_reason == "end_turn":
+        function_calls = [
+            part.function_call
+            for part in assistant_content.parts
+            if part.function_call and part.function_call.name
+        ]
+
+        if not function_calls:
             break
 
-        tool_results = []
-        for block in assistant_content:
-            if block.type != "tool_use":
-                continue
-
-            if block.name == "search":
+        result_parts = []
+        for fc in function_calls:
+            if fc.name == "search":
                 if search_call_count >= MAX_SEARCH_CALLS:
-                    raise RuntimeError(
-                        f"Exceeded maximum search calls ({MAX_SEARCH_CALLS})"
-                    )
+                    raise RuntimeError(f"Exceeded maximum search calls ({MAX_SEARCH_CALLS})")
                 search_call_count += 1
                 try:
-                    results = search(block.input["query"])
-                    tool_results.append(
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": json.dumps(results),
-                        }
+                    results = do_search(fc.args["query"])
+                    result_parts.append(
+                        types.Part(
+                            function_response=types.FunctionResponse(
+                                name="search",
+                                response={"content": json.dumps(results, ensure_ascii=False)},
+                            )
+                        )
                     )
                 except Exception as e:
                     raise RuntimeError(f"Tavily search failed: {e}") from e
 
-            elif block.name == "submit_report":
-                report = block.input
-                tool_results.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": "Report submitted successfully.",
-                    }
+            elif fc.name == "submit_report":
+                report = dict(fc.args)
+                result_parts.append(
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            name="submit_report",
+                            response={"status": "success"},
+                        )
+                    )
                 )
 
-        if tool_results:
-            messages.append({"role": "user", "content": tool_results})
+        contents.append(types.Content(role="user", parts=result_parts))
 
-        if report is not None and response.stop_reason == "tool_use":
-            # After submit_report, let the model end naturally
-            continue
+        if report is not None:
+            break
 
     if report is None:
         raise RuntimeError("Agent completed without calling submit_report")
@@ -207,7 +219,7 @@ def run_agent() -> dict:
 
 
 def append_to_summaries(report: dict) -> None:
-    summaries_path = os.path.join(os.path.dirname(__file__), "summaries.md")
+    summaries_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "summaries.md")
     entry = f"---\ndate: {report['date']}\n---\n{json.dumps(report, ensure_ascii=False)}\n"
     with open(summaries_path, "a", encoding="utf-8") as f:
         f.write(entry)

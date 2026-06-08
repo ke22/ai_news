@@ -34,5 +34,5 @@
 
 ## 6. End-to-End Validation
 
-- [ ] 6.1 Run a full local test: `bash run.sh` with real API keys. Open `index.html` in a browser and confirm 7 EN headlines, EN analysis, EN sources, and the same three sections in ZH are all present and non-empty. This validates the full pipeline end-to-end.
-- [ ] 6.2 Trigger the GitHub Actions workflow manually (Actions → daily → Run workflow). Confirm the run succeeds and GitHub Pages updates within 5 minutes. This validates the deployment pipeline.
+- [x] 6.1 Run a full local test: `bash run.sh` with real API keys. Open `index.html` in a browser and confirm 7 EN headlines, EN analysis, EN sources, and the same three sections in ZH are all present and non-empty. This validates the full pipeline end-to-end.
+- [x] 6.2 Trigger the GitHub Actions workflow manually (Actions → daily → Run workflow). Confirm the run succeeds and GitHub Pages updates within 5 minutes. This validates the deployment pipeline.
