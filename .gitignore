@@ -1,0 +1,7 @@
+.spectra/
+openspec/.vector-search.db*
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store

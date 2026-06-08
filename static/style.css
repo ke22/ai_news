@@ -1,0 +1,130 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #222;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 1rem;
+  border-bottom: 2px solid #222;
+}
+
+nav {
+  margin-bottom: 1rem;
+}
+
+nav a {
+  color: #222;
+  text-decoration: none;
+  margin-right: 1.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+nav a:hover { text-decoration: underline; }
+
+h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.tagline {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem;
+}
+
+.date {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3rem;
+  margin-top: 2rem;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+}
+
+ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+li {
+  margin-bottom: 0.6rem;
+}
+
+.headlines li {
+  font-weight: 600;
+}
+
+.analysis-body {
+  white-space: pre-wrap;
+  color: #333;
+}
+
+.sources li {
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.sources a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.sources a:hover { text-decoration: underline; }
+
+.archive-list li {
+  font-size: 1rem;
+  font-weight: normal;
+}
+
+.archive-list a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.archive-list a:hover { text-decoration: underline; }
+
+hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 2rem 0;
+}
+
+footer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  font-size: 0.85rem;
+  color: #999;
+}
