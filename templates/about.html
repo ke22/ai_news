@@ -41,7 +41,7 @@ Every day at 08:00
        │  decides what to search, runs tool calls autonomously     │
        ▼                                                           │
   Tavily Search API  ──── results ────────────────────────────────►│
-       (3–10 queries)           Gemini synthesises &amp; writes bilingual summary
+       (8–15 queries, EN + ZH)  Gemini synthesises &amp; writes bilingual summary
        │
        ▼
   summaries.md  (append-only, bilingual JSON)
@@ -59,10 +59,18 @@ Every day at 08:00
         <h3>What each component does</h3>
         <ul>
           <li><strong>GitHub Actions (cron)</strong>: Triggers the entire pipeline daily at 08:00 TWN. No human intervention required after setup.</li>
-          <li><strong>Gemini (gemini-2.5-flash)</strong>: The "brain" of the agent. It autonomously decides which queries to run, calls the search tool multiple times, then synthesises all results into a structured bilingual summary.</li>
-          <li><strong>Tavily Search API</strong>: An AI-optimised search API that returns clean, structured results suitable for LLM consumption — no HTML scraping needed.</li>
+          <li><strong>Gemini (gemini-2.5-flash)</strong>: The "brain" of the agent. It runs two search passes — an English pass covering five categories (當日 daily, Breaking, High-Impact, Viral, Unusual) and a Chinese-language pass targeting Asian/Taiwan outlets — then synthesises all results into a structured bilingual summary. Fact-check rules prevent it from citing URLs or facts not found in search results.</li>
+          <li><strong>Tavily Search API</strong>: An AI-optimised search API called with <code>topic="news"</code> and <code>days=2</code> to enforce recency — results are capped to articles published in the last 48 hours. Returns clean structured results, no HTML scraping needed.</li>
           <li><strong>publish.py</strong>: Converts the append-only <code>summaries.md</code> into a static website. Parses dates, splits bilingual content, renders HTML with EN/ZH toggle.</li>
           <li><strong>GitHub Pages</strong>: Serves the static site for free. Each daily page gets a permanent URL (<code>/YYYY-MM-DD/</code>).</li>
+        </ul>
+
+        <h3>Search discipline</h3>
+        <p>Each run the agent applies three layers of discipline to improve coverage and accuracy:</p>
+        <ul>
+          <li><strong>Five-category scope</strong>: Queries are structured around five types — <em>當日</em> (today's standard news), <em>Breaking</em> (just-announced), <em>High-Impact</em> (industry/societal significance), <em>Viral</em> (trending), and <em>Unusual</em> (surprising or counterintuitive). The seven final headlines must collectively span all five.</li>
+          <li><strong>Bilingual search pass</strong>: After the English pass (5–10 queries), a second Chinese-language pass (3–5 queries) targets outlets like iThome, 科技新報, 數位時代, and 36氪 — surfacing Asian AI news that English-only searches miss. At least two Chinese-outlet sources must appear in the final report.</li>
+          <li><strong>Fact-check rules</strong>: The agent is instructed to cite only URLs returned by search results, never invent company names or numbers, and omit any claim it cannot confirm from retrieved articles.</li>
         </ul>
 
         <h3>Why this design?</h3>
@@ -166,7 +174,7 @@ Human describes requirement
        │  自主決定搜尋策略，執行工具呼叫                             │
        ▼                                                           │
   Tavily Search API  ──── 搜尋結果 ──────────────────────────────►│
-       （執行 3–10 次查詢）     Gemini 整合結果，生成中英雙語摘要
+       （8–15 次查詢，中英雙語）  Gemini 整合結果，生成中英雙語摘要
        │
        ▼
   summaries.md（只增不改，雙語 JSON）
@@ -184,10 +192,18 @@ Human describes requirement
         <h3>各元件功能說明</h3>
         <ul>
           <li><strong>GitHub Actions（cron）</strong>：每天早上 08:00 自動觸發整條流程，設定完成後不需要任何人工操作。</li>
-          <li><strong>Gemini（gemini-2.5-flash）</strong>：Agent 的「大腦」。自主決定要搜尋什麼、多次呼叫搜尋工具，最後將所有結果整合為結構化的中英雙語摘要。</li>
-          <li><strong>Tavily Search API</strong>：專為 AI 應用優化的搜尋 API，回傳乾淨的結構化結果，不需要解析 HTML。</li>
+          <li><strong>Gemini（gemini-2.5-flash）</strong>：Agent 的「大腦」。執行兩輪搜尋——英文輪涵蓋五個類別（當日、Breaking、High-Impact、Viral、Unusual），中文輪鎖定 iThome、科技新報、數位時代等亞洲媒體——再將所有結果整合為結構化的中英雙語摘要。事實查核規則確保引用的 URL 與數據均來自實際搜尋結果。</li>
+          <li><strong>Tavily Search API</strong>：專為 AI 應用優化的搜尋 API，以 <code>topic="news"</code> 與 <code>days=2</code> 強制即時性，僅回傳 48 小時內發布的文章。回傳乾淨的結構化結果，不需要解析 HTML。</li>
           <li><strong>publish.py</strong>：將只增不改的 <code>summaries.md</code> 轉換為靜態網站。解析日期、拆分雙語內容、生成含語言切換功能的 HTML 頁面。</li>
           <li><strong>GitHub Pages</strong>：免費提供靜態網站服務。每個每日頁面都有永久的 URL（<code>/YYYY-MM-DD/</code>）。</li>
+        </ul>
+
+        <h3>搜尋紀律</h3>
+        <p>每次執行，Agent 透過三層紀律提升覆蓋廣度與準確性：</p>
+        <ul>
+          <li><strong>五類別搜尋範圍</strong>：查詢依五種類型組織——<em>當日</em>（今日一般 AI 新聞）、<em>Breaking</em>（剛發布的即時新聞）、<em>High-Impact</em>（對產業或社會有重大影響）、<em>Viral</em>（廣傳討論中）、<em>Unusual</em>（出乎意料或反直覺）。最終七則標題必須涵蓋全部五個類別。</li>
+          <li><strong>中文搜尋輪次</strong>：英文輪（5–10 次查詢）結束後，再執行中文輪（3–5 次查詢），鎖定 iThome、科技新報、數位時代、36氪 等媒體，挖掘英文搜尋容易遺漏的亞洲 AI 新聞。最終報告中至少需包含兩個中文媒體來源。</li>
+          <li><strong>事實查核規則</strong>：Agent 只能引用搜尋結果中實際出現的 URL，不得自行編造公司名稱或數據，無法從搜尋結果確認的內容一律省略。</li>
         </ul>
 
         <h3>為什麼這樣設計？</h3>
