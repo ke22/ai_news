@@ -14,43 +14,79 @@ body {
   margin: 0 auto;
 }
 
-/* Header & Nav */
+/* Header — 3-column: brand | nav | lang-toggle */
 header {
-  margin-bottom: 40px;
-  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
   padding-bottom: 20px;
-  overflow: hidden;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 40px;
+}
+
+.brand { flex: 1; }
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.brand-tagline {
+  font-size: 12px;
+  color: #999;
+  margin-top: 3px;
 }
 
 nav {
+  flex: 1;
   display: flex;
-  gap: 30px;
-  font-size: 14px;
+  justify-content: center;
   align-items: center;
+  gap: 20px;
+  font-size: 14px;
+  padding-top: 3px;
 }
 
 nav a {
   text-decoration: none;
-  color: #0066cc;
+  color: #333;
 }
 
 nav a:hover { text-decoration: underline; }
 
-nav .sep { color: #999; }
-
 .lang-toggle {
-  float: right;
-  font-size: 12px;
-  letter-spacing: 2px;
-  margin-top: -20px;
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
 }
 
-.lang-toggle span { color: #333; }
-.lang-toggle a { color: #999; margin-left: 10px; text-decoration: none; }
-.lang-toggle a:hover { text-decoration: underline; }
+.lang-btn {
+  padding: 4px 12px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 1px;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.lang-btn.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.lang-btn:hover:not(.active) { background: #f0f0f0; }
 
 /* Typography */
-h1 { font-size: 28px; margin: 0 0 10px 0; }
+h1 { font-size: 26px; margin: 0 0 10px 0; }
 .tagline { font-size: 14px; color: #666; margin: 0 0 25px 0; }
 
 h2 {
@@ -126,19 +162,17 @@ hr {
   margin: 30px 0;
 }
 
-/* ZH section offset */
-.zh {
-  margin-top: 60px;
-  padding-top: 40px;
-}
-
 /* Archive list */
 .archive-entries ul {
   list-style: none;
   padding: 0;
 }
 
-.archive-entries li { margin-bottom: 12px; font-size: 15px; }
+.archive-entries li {
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 15px;
+}
 
 .archive-entries a {
   color: #0066cc;
