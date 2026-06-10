@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from datetime import date
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from google import genai
@@ -20,9 +21,11 @@ if not TAVILY_API_KEY:
     print("Error: TAVILY_API_KEY not set", file=sys.stderr)
     sys.exit(1)
 
-MAX_SEARCH_CALLS = 15
+MAX_SEARCH_CALLS = 20
 
 SYSTEM_PROMPT = """You are an AI news analyst. Research today's most important AI news and produce a structured bilingual daily summary.
+
+{memory_context}
 
 ## Fact-Check Thinking Rules
 Before writing any headline, claim, or citation, verify it against your search results:
@@ -33,6 +36,8 @@ Before writing any headline, claim, or citation, verify it against your search r
 
 ## Search Scope
 Run searches in two passes. Total 8 to 15 searches.
+
+**Before searching**: Call `submit_plan` with your intended queries per category. Example: `{{"category_queries": {{"Breaking": ["breaking AI news today"], "Daily": ["AI news June 2025"]}}}}`. Then begin your `search` calls.
 
 **English pass (5–10 searches)** — cover each of these five categories:
 - 當日 (Daily): Today's general AI news — model updates, product launches, company news
@@ -88,6 +93,20 @@ TOOLS = [
                         )
                     },
                     required=["query"],
+                ),
+            ),
+            types.FunctionDeclaration(
+                name="submit_plan",
+                description="Declare your intended search plan before making any search calls. Provide a map of category names to lists of queries you plan to run.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "category_queries": types.Schema(
+                            type=types.Type.OBJECT,
+                            description='Map of category names to lists of intended search queries. Example: {"Breaking": ["breaking AI news today"], "Daily": ["AI news June 2025"]}',
+                        )
+                    },
+                    required=["category_queries"],
                 ),
             ),
             types.FunctionDeclaration(
@@ -158,13 +177,99 @@ def do_search(query: str) -> list[dict]:
     ]
 
 
+def build_memory_context(summaries_path: str) -> str:
+    try:
+        with open(summaries_path, encoding="utf-8") as f:
+            content = f.read()
+    except (FileNotFoundError, OSError):
+        return ""
+
+    parts = content.split("---\ndate:")
+    json_entries = []
+    for part in parts[1:]:
+        lines = part.split("\n", 3)
+        if len(lines) >= 3:
+            try:
+                json_entries.append(json.loads(lines[2].strip()))
+            except (json.JSONDecodeError, ValueError):
+                continue
+
+    if not json_entries:
+        return ""
+
+    recent = json_entries[-7:]
+
+    domains: set[str] = set()
+    for entry in recent:
+        for source in entry.get("sources_en", []) + entry.get("sources_zh", []):
+            hostname = urlparse(source.get("url", "")).hostname
+            if hostname:
+                domains.add(hostname)
+
+    topics: list[str] = []
+    seen: set[str] = set()
+    for entry in recent:
+        for headline in entry.get("headlines_en", []):
+            fragment = " ".join(headline.split()[:5])
+            if fragment and fragment not in seen:
+                seen.add(fragment)
+                topics.append(fragment)
+
+    if not domains and not topics:
+        return ""
+
+    out = ["## Recent History (last 7 days)"]
+    if domains:
+        out.append(f"Source domains used recently: {', '.join(sorted(domains))}")
+    if topics:
+        out.append(f"Recent headline topics: {'; '.join(topics[:14])}")
+    out.append("Diversify away from these sources and topics today.")
+    return "\n".join(out)
+
+
+_CHINESE_OUTLET_HOSTNAMES = frozenset({
+    "ithome.com.tw", "technews.tw", "bnext.com.tw",
+    "36kr.com", "jiqizhixin.com", "qbitai.com", "technews.com.tw",
+})
+
+
+def check_no_homepage_urls(sources: list[dict]) -> list[str]:
+    gaps = []
+    for s in sources:
+        path = urlparse(s.get("url", "")).path
+        if path in ("", "/"):
+            gaps.append(f"Homepage URL detected: {s.get('url', '')}")
+    return gaps
+
+
+def check_chinese_outlet_count(sources_zh: list[dict]) -> list[str]:
+    count = sum(
+        1 for s in sources_zh
+        if urlparse(s.get("url", "")).hostname in _CHINESE_OUTLET_HOSTNAMES
+    )
+    if count < 2:
+        return [f"Chinese outlet count in sources_zh: {count} (required ≥ 2)"]
+    return []
+
+
+def check_source_counts(sources_en: list[dict], sources_zh: list[dict]) -> list[str]:
+    gaps = []
+    for label, sources in [("sources_en", sources_en), ("sources_zh", sources_zh)]:
+        n = len(sources)
+        if n < 12 or n > 14:
+            gaps.append(f"{label} count: {n} (required 12–14)")
+    return gaps
+
+
 def run_agent() -> dict:
     client = genai.Client(api_key=GEMINI_API_KEY)
     today = date.today().isoformat()
+    summaries_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "summaries.md")
+    memory_context = build_memory_context(summaries_path)
 
     config = types.GenerateContentConfig(
         tools=TOOLS,
-        system_instruction=SYSTEM_PROMPT.format(date=today),
+        system_instruction=SYSTEM_PROMPT.format(date=today, memory_context=memory_context),
     )
 
     contents: list[types.Content] = [
@@ -180,6 +285,9 @@ def run_agent() -> dict:
 
     search_call_count = 0
     report = None
+    plan: dict | None = None
+    submit_count = 0
+    first_submit_gaps: list[str] = []
 
     while True:
         response = client.models.generate_content(
@@ -189,6 +297,8 @@ def run_agent() -> dict:
         )
 
         assistant_content = response.candidates[0].content
+        if assistant_content is None:
+            break
         contents.append(assistant_content)
 
         function_calls = [
@@ -219,16 +329,58 @@ def run_agent() -> dict:
                 except Exception as e:
                     raise RuntimeError(f"Tavily search failed: {e}") from e
 
-            elif fc.name == "submit_report":
-                report = dict(fc.args)
+            elif fc.name == "submit_plan":
+                plan = dict(fc.args)
                 result_parts.append(
                     types.Part(
                         function_response=types.FunctionResponse(
-                            name="submit_report",
-                            response={"status": "success"},
+                            name="submit_plan",
+                            response={"status": "received"},
                         )
                     )
                 )
+
+            elif fc.name == "submit_report":
+                submit_count += 1
+                if submit_count == 1:
+                    sources_en = list(fc.args.get("sources_en", []))
+                    sources_zh = list(fc.args.get("sources_zh", []))
+                    gaps = (
+                        check_no_homepage_urls(sources_en)
+                        + check_no_homepage_urls(sources_zh)
+                        + check_chinese_outlet_count(sources_zh)
+                        + check_source_counts(sources_en, sources_zh)
+                    )
+                    if gaps:
+                        first_submit_gaps = gaps
+                        result_parts.append(
+                            types.Part(
+                                function_response=types.FunctionResponse(
+                                    name="submit_report",
+                                    response={"status": "quality_check_failed", "gaps": gaps},
+                                )
+                            )
+                        )
+                    else:
+                        report = dict(fc.args)
+                        result_parts.append(
+                            types.Part(
+                                function_response=types.FunctionResponse(
+                                    name="submit_report",
+                                    response={"status": "success"},
+                                )
+                            )
+                        )
+                else:
+                    report = dict(fc.args)
+                    result_parts.append(
+                        types.Part(
+                            function_response=types.FunctionResponse(
+                                name="submit_report",
+                                response={"status": "accepted_on_retry"},
+                            )
+                        )
+                    )
 
         contents.append(types.Content(role="user", parts=result_parts))
 
@@ -237,6 +389,11 @@ def run_agent() -> dict:
 
     if report is None:
         raise RuntimeError("Agent completed without calling submit_report")
+
+    if plan is not None:
+        report["plan"] = plan
+    if first_submit_gaps:
+        report["evaluation_gaps"] = first_submit_gaps
 
     return report
 

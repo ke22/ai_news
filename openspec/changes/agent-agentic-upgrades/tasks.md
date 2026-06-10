@@ -1,0 +1,27 @@
+## 1. Memory: build_memory_context()
+
+- [x] 1.1 Implement `build_memory_context(summaries_path: str) -> str` in `agent.py`. Per design decision "Memory context is built from `summaries.md` before `run_agent()` is called": parse the last 7 JSON entries from `summaries.md`, extract unique source domain hostnames and headline keyword fragments, return a `## Recent History` block. Errors silently return `""`. Per "Agent receives recent source history before each run" and "Memory extraction reads at most the last 7 entries" requirements. Verified by: calling `build_memory_context()` on a `summaries.md` with 10 entries and confirming output lists only domains from the last 7 entries and contains the `## Recent History` header.
+
+- [x] 1.2 Apply the `SYSTEM_PROMPT` change: add `{memory_context}` placeholder to `SYSTEM_PROMPT` and update `run_agent()` to pass the result of `build_memory_context()` alongside `{date}`. If `build_memory_context()` returns `""`, the rendered prompt contains no `## Recent History` section. Per "Memory context is absent when no history is available" requirement. Verified by: `python -c "from agent import SYSTEM_PROMPT"` exits 0; running on a missing `summaries.md` does not raise.
+
+## 2. Planning: submit_plan tool
+
+- [x] 2.1 Add `submit_plan` FunctionDeclaration implementing the `submit_plan` tool schema to TOOLS in `agent.py` so that the Agent declares search plan before first search call. Schema: `category_queries` object (additionalProperties: array of strings, required). Per design decision "`submit_plan` tool is required before the first `search` call" and "`submit_plan` tool schema", and per requirement "Agent declares search plan before first search call". Verified by: `python -c "from agent import TOOLS; names=[t.function_declarations[0].name for t in TOOLS]; assert 'submit_plan' in str(names)"` exits 0.
+
+- [x] 2.2 Add `submit_plan` handler in the `run_agent()` agentic loop. When `fc.name == "submit_plan"`: store `fc.args["category_queries"]` in local `plan` variable; respond `{"status": "received"}`; do not break. Per "Plan is stored in the final report JSON" and "Missing plan does not block the pipeline" requirements. Verified by: running `python agent.py` and inspecting the new `summaries.md` entry contains `"plan"` key with at least one category.
+
+- [x] 2.3 Update `SYSTEM_PROMPT` Search Scope section to instruct the agent to call `submit_plan` with intended queries per category before making any `search` call. Per "Agent loop accepts two optional new tools" requirement. Verified by: reading the rendered system prompt and confirming `submit_plan` instruction appears before the search category list.
+
+## 3. Self-evaluation: quality gate in submit_report
+
+- [x] 3.1 Implement three pure quality-check functions in `agent.py`: `check_no_homepage_urls(sources)`, `check_chinese_outlet_count(sources_zh)`, `check_source_counts(sources_en, sources_zh)`. Each returns `list[str]` of gap descriptions. Homepage check: use `urllib.parse.urlparse`; path empty or `/` is FAIL. Chinese outlet hostnames: `ithome.com.tw`, `technews.tw`, `bnext.com.tw`, `36kr.com`, `jiqizhixin.com`, `qbitai.com`, `technews.com.tw`; fewer than 2 matches is FAIL. Source count: fewer than 12 or more than 14 entries is FAIL. Per "submit_report enforces three quality rules on first submission" requirement. Verified by: `python -c` calling each function with spec Example table values: `https://reuters.com` returns non-empty list, `https://reuters.com/article/ai` returns empty list.
+
+- [x] 3.2 Implement the `submit_report` quality gate in `run_agent()` using `submit_count` tracking. Per design decision "Quality evaluation is embedded in `submit_report` response, not a separate tool": on first `submit_report` call run the three check functions; if any gaps respond `{"status": "quality_check_failed", "gaps": [...]}` and continue loop; if clean respond `{"status": "success"}` and accept. On second call accept unconditionally with `{"status": "accepted_on_retry"}`. Per "Second submit_report call is accepted unconditionally" requirement. Verified by: constructing a report dict with homepage URLs and asserting handler returns `quality_check_failed` on first call and `accepted_on_retry` on second.
+
+- [x] 3.3 Apply the Report JSON shape change: include `"plan"` key in returned report dict when `submit_plan` was called; include `"evaluation_gaps"` key when retry occurred. `append_to_summaries()` requires no change. Per "Quality gaps are recorded in the report JSON" requirement. Verified by: running `python agent.py` and confirming `summaries.md` tail entry contains `"plan"` and optionally `"evaluation_gaps"`.
+
+## 4. Integration and verification
+
+- [x] 4.1 Run `python publish.py` after a new entry exists containing `"plan"` and optionally `"evaluation_gaps"`. Confirm `publish.py` exits 0 and HTML renders without errors — these fields must not break `parse_summaries()`. Per acceptance criteria in design.md. Verified by: `python publish.py` exits 0; `index.html` opens without visible errors.
+
+- [x] 4.2 Full end-to-end run: execute `python agent.py` with live API keys and inspect the resulting `summaries.md` entry: (a) `"plan"` key present with at least 1 category, (b) all URLs in `sources_en` and `sources_zh` have non-root paths, (c) `sources_zh` contains at least 2 Chinese outlet URLs, (d) date matches today. Per "Claude searches for AI news autonomously" modified requirement. Verified by: manual inspection of the tail `summaries.md` entry confirming all four conditions.
