@@ -2,7 +2,8 @@ name: Daily AI News
 
 "on":
   schedule:
-    - cron: '17 1 * * *'
+    # 23:15 UTC = 07:15 Asia/Taipei. Run before 08:00 TWN to absorb GitHub schedule delay.
+    - cron: '15 23 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,6 +13,7 @@ jobs:
       contents: write
 
     env:
+      TZ: Asia/Taipei
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
 
