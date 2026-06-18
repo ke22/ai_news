@@ -41,3 +41,20 @@ The immediate failure was an intermittent Tavily/API search failure, not a missi
 - Log the search query and exception type when Tavily fails, while avoiding API keys or sensitive response details.
 - Consider continuing after one failed query if enough other searches succeed to produce a valid report.
 - Add a lightweight post-run check that confirms the expected `YYYY-MM-DD/` page is reachable after the workflow completes.
+
+## Notion publishing setup
+
+The daily workflow can publish the latest report to a Notion database after the static site is generated.
+
+Required GitHub repository secrets:
+
+- `NOTION_TOKEN`: Internal integration token from Notion.
+- `NOTION_DATABASE_ID`: Target Notion database ID.
+
+The target database must be shared with the Notion integration and should include these properties:
+
+- `Name`: title
+- `Date`: date
+- `URL`: url
+
+If either Notion secret is missing, `notion_publish.py` skips publishing and the daily workflow continues.
