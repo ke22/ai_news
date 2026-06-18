@@ -49,4 +49,5 @@ jobs:
           git push
 
       - name: Publish to Notion
+        continue-on-error: true
         run: python3 notion_publish.py
