@@ -28,13 +28,11 @@ def parse_summaries() -> list[dict]:
         block = block.strip()
         if not block:
             continue
-        # block: " 2026-06-06\n---\n{json}"
         first_nl = block.find("\n")
         if first_nl == -1:
             continue
         date_str = block[:first_nl].strip()
         rest = block[first_nl:].strip()
-        # skip the closing "---" separator before JSON
         if rest.startswith("---"):
             rest = rest[3:].strip()
         if not rest:
@@ -50,9 +48,24 @@ def parse_summaries() -> list[dict]:
     return entries
 
 
+def group_entries(entries: list[dict]) -> tuple[list[str], dict[str, list[dict]]]:
+    """Group entries by date preserving newest-date-first order.
+    Within each date, entries are in summaries.md order (oldest run first)."""
+    groups: dict[str, list[dict]] = {}
+    date_order: list[str] = []
+    for entry in entries:
+        d = entry["date"]
+        if d not in groups:
+            groups[d] = []
+            date_order.append(d)
+        groups[d].append(entry)
+    return date_order, groups
+
+
 def render_headlines(headlines: list[str]) -> str:
     items = []
     for h in headlines:
+        h = h.replace("**", "").strip()
         if ": " in h:
             title, rest = h.split(": ", 1)
             items.append(f"            <li><strong>{title}:</strong> {rest}</li>")
@@ -93,6 +106,41 @@ def render_day_page(entry: dict, template: Template) -> str:
     )
 
 
+def _first_headline(data: dict, lang: str) -> str:
+    headlines = data.get(f"headlines_{lang}", [])
+    if not headlines:
+        return ""
+    h = headlines[0].replace("**", "").strip()
+    if ": " in h:
+        title, _ = h.split(": ", 1)
+    else:
+        title = h
+    return title[:65] + "…" if len(title) > 65 else title
+
+
+def render_archive_items(date_order: list[str], groups: dict[str, list[dict]], lang: str) -> str:
+    items = []
+    for date_str in date_order:
+        date_entries = groups[date_str]
+        n = len(date_entries)
+        # Newest run first
+        for i, entry in enumerate(reversed(date_entries)):
+            orig_idx = n - 1 - i  # position in date_entries (0 = oldest)
+            is_canonical = orig_idx == n - 1
+            link = f"{date_str}/" if is_canonical else f"{date_str}/run-{orig_idx + 1}.html"
+            run_label = "" if is_canonical else f"run {orig_idx + 1}"
+            title = _first_headline(entry["data"], lang)
+            badge = f'<span class="run-badge">{run_label}</span>' if run_label else ""
+            css_class = "archive-item archive-item--prev" if not is_canonical else "archive-item"
+            items.append(
+                f'<li class="{css_class}">'
+                f'<span class="archive-date-col"><a href="{link}">{date_str}</a>{badge}</span>'
+                f'<span class="archive-preview">{title}</span>'
+                f'</li>'
+            )
+    return "\n          ".join(items)
+
+
 def write_file(path: str, content: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -106,20 +154,31 @@ def main() -> None:
         print("Error: summaries.md contains no valid entries", file=sys.stderr)
         sys.exit(1)
 
+    date_order, groups = group_entries(entries)
+
     day_template = load_template("day.html")
     index_template = load_template("index.html")
     archive_template = load_template("archive.html")
     about_template = load_template("about.html")
 
-    # Per-day pages
-    for entry in entries:
-        html = render_day_page(entry, day_template)
-        out_path = os.path.join(ROOT, entry["date"], "index.html")
-        write_file(out_path, html)
-        print(f"  wrote {entry['date']}/index.html", file=sys.stderr)
+    # Per-date pages: oldest runs → run-N.html, newest run → index.html
+    for date_str in date_order:
+        date_entries = groups[date_str]
+        n = len(date_entries)
+        for orig_idx, entry in enumerate(date_entries):
+            html = render_day_page(entry, day_template)
+            if orig_idx == n - 1:
+                out_path = os.path.join(ROOT, date_str, "index.html")
+                label = "index.html"
+            else:
+                fname = f"run-{orig_idx + 1}.html"
+                out_path = os.path.join(ROOT, date_str, fname)
+                label = fname
+            write_file(out_path, html)
+            print(f"  wrote {date_str}/{label}", file=sys.stderr)
 
-    # Today's index page (most recent entry)
-    latest = entries[0]
+    # Homepage = most recent date, most recent run
+    latest = groups[date_order[0]][-1]
     data = latest["data"]
     index_html = index_template.substitute(
         date=latest["date"],
@@ -134,20 +193,19 @@ def main() -> None:
     print("  wrote index.html", file=sys.stderr)
 
     # Archive page
-    date_links = "\n".join(
-        f'<li><a href="{e["date"]}/">{e["date"]}</a></li>'
-        for e in entries
+    archive_html = archive_template.substitute(
+        archive_items_en=render_archive_items(date_order, groups, "en"),
+        archive_items_zh=render_archive_items(date_order, groups, "zh"),
     )
-    archive_html = archive_template.substitute(date_links=date_links)
     write_file(os.path.join(ROOT, "archive.html"), archive_html)
     print("  wrote archive.html", file=sys.stderr)
 
-    # About page (static template, no substitutions needed)
-    about_html = about_template.template
-    write_file(os.path.join(ROOT, "about.html"), about_html)
+    # About page (static)
+    write_file(os.path.join(ROOT, "about.html"), about_template.template)
     print("  wrote about.html", file=sys.stderr)
 
-    print(f"Done. Published {len(entries)} entries.", file=sys.stderr)
+    total_runs = sum(len(v) for v in groups.values())
+    print(f"Done. {len(date_order)} dates, {total_runs} total runs.", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -40,13 +40,13 @@ Run searches in two passes. Total 8 to 15 searches.
 **Before searching**: Call `submit_plan` with your intended queries per category. Example: `{{"category_queries": {{"Breaking": ["breaking AI news today"], "Daily": ["AI news June 2025"]}}}}`. Then begin your `search` calls.
 
 **English pass (5–10 searches)** — cover each of these five categories:
-- 當日 (Daily): Today's general AI news — model updates, product launches, company news
-- Breaking: Urgent or just-announced AI news today
-- High-Impact: AI news with major implications for industry, economy, or society
+- 當日 (Daily): Today's general AI news — model updates, product launches, company news. Prioritize TechCrunch (techcrunch.com), The Verge (theverge.com), Axios (axios.com)
+- Breaking: Urgent or just-announced AI news today. Prioritize the labs' own announcements: OpenAI (openai.com), Anthropic (anthropic.com), Google DeepMind (deepmind.google)
+- High-Impact: AI news with major implications for industry, economy, or society. Prioritize McKinsey & Company (mckinsey.com), a16z (a16z.com)
 - Viral: AI stories trending or widely discussed on social media today
 - Unusual: Surprising, counterintuitive, or unexpected AI developments
 
-**Chinese-language pass (3–5 searches)** — run these queries to surface Asian and Taiwan AI news that English searches miss. Prioritize results from: iThome (ithome.com.tw), 科技新報 (technews.tw), 數位時代 (bnext.com.tw), 36氪 (36kr.com), 机器之心 (jiqizhixin.com):
+**Chinese-language pass (3–5 searches)** — run these queries to surface Asian and Taiwan AI news that English searches miss. Prioritize results from: iThome (ithome.com.tw), 科技新報 (technews.tw), 數位時代 (bnext.com.tw), 36氪 (36kr.com), 机器之心 (jiqizhixin.com), 愛好 AI 工程 Blog (blog.aihao.tw):
 - "AI 模型 發布 今日 2025"
 - "人工智慧 企業 投資 亞洲 最新"
 - "AI 政策 法規 台灣 日本 新加坡"
@@ -230,6 +230,7 @@ def build_memory_context(summaries_path: str) -> str:
 _CHINESE_OUTLET_HOSTNAMES = frozenset({
     "ithome.com.tw", "technews.tw", "bnext.com.tw",
     "36kr.com", "jiqizhixin.com", "qbitai.com", "technews.com.tw",
+    "blog.aihao.tw",
 })
 
 
