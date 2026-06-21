@@ -50,7 +50,3 @@ jobs:
           git add -A
           git commit -m "Daily update $(date +%Y-%m-%d)" || echo "Nothing to commit"
           git push
-
-      - name: Publish to Notion
-        continue-on-error: true
-        run: python3 notion_publish.py
