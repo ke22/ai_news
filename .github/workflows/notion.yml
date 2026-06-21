@@ -25,5 +25,5 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Publish latest report to Notion
-        run: python3 notion_publish.py
+      - name: Sync latest report to Notion
+        run: python3 notion_sync.py
