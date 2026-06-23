@@ -9,4 +9,4 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Regenerate the static site, run the Python test suite and Spectra validation, then perform desktop and mobile browser checks against local AI News with the deployed or local embed.
+- [x] 3.1 Regenerate the static site, run the Python test suite and Spectra validation, then perform desktop and mobile browser checks against local AI News with the deployed or local embed.
