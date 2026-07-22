@@ -23,6 +23,32 @@ if not TAVILY_API_KEY:
 
 MAX_SEARCH_CALLS = 20
 
+# gemini-2.0-flash and earlier were retired 2026-06-01; gemini-2.5-flash has a
+# confirmed shutdown no earlier than 2026-10-16 and has already returned early
+# 404s for some callers. Candidate list + retry avoids a repeat of the
+# openclaw notion-sync incident (see 01_Github/LEARNINGS.md #21).
+GEMINI_MODEL_CANDIDATES = [
+    m.strip()
+    for m in os.environ.get("GEMINI_MODEL", "gemini-3.6-flash,gemini-2.5-flash").split(",")
+    if m.strip()
+]
+
+
+def _generate_content_with_fallback(client, contents, config):
+    last_err = None
+    for model in GEMINI_MODEL_CANDIDATES:
+        try:
+            return client.models.generate_content(model=model, contents=contents, config=config)
+        except Exception as e:
+            if "404" in str(e) or "NOT_FOUND" in str(e):
+                print(f"[gemini] {model} unavailable, trying next candidate: {e}", file=sys.stderr)
+                last_err = e
+                continue
+            raise
+    raise RuntimeError(
+        f"All Gemini model candidates unavailable ({', '.join(GEMINI_MODEL_CANDIDATES)}): {last_err}"
+    )
+
 SYSTEM_PROMPT = """You are an AI news analyst. Research today's most important AI news and produce a structured bilingual daily summary.
 
 {memory_context}
@@ -291,11 +317,7 @@ def run_agent() -> dict:
     first_submit_gaps: list[str] = []
 
     while True:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=config,
-        )
+        response = _generate_content_with_fallback(client, contents, config)
 
         assistant_content = response.candidates[0].content
         if assistant_content is None:
